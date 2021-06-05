@@ -5,6 +5,7 @@ use actix_service::{Service, Transform};
 use actix_session::{Session, SessionStatus};
 use actix_web::cookie::{Cookie, CookieJar, Key, SameSite};
 use actix_web::dev::{ServiceRequest, ServiceResponse};
+use actix_web::error::JsonPayloadError;
 use actix_web::http::header::{self, HeaderValue};
 use actix_web::{error, Error, HttpMessage};
 use futures_core::future::LocalBoxFuture;
@@ -12,6 +13,7 @@ use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use redis_async::resp::RespValue;
 use redis_async::resp_array;
 use time::{self, Duration, OffsetDateTime};
+use actix_cookie::Cookied;
 
 use crate::redis::{Command, RedisActor};
 
@@ -311,7 +313,7 @@ impl Inner {
 
             // set cookie
             let mut jar = CookieJar::new();
-            jar.signed(&self.key).add(cookie);
+            jar.signed_mut(&self.key).add(cookie);
 
             (value, Some(jar))
         };
@@ -320,10 +322,7 @@ impl Inner {
 
         let state: HashMap<_, _> = state.collect();
 
-        let body = match serde_json::to_string(&state) {
-            Err(e) => return Err(e.into()),
-            Ok(body) => body,
-        };
+        let body = serde_json::to_string(&state).map_err(JsonPayloadError::Serialize)?;
 
         let cmd = Command(resp_array!["SET", cache_key, body, "EX", &self.ttl]);
 
@@ -385,6 +384,8 @@ mod test {
         middleware, web,
         web::{get, post, resource},
         App, HttpResponse, Result,
+        BaseHttpResponse,
+        body::Body,
     };
     use serde::{Deserialize, Serialize};
     use serde_json::json;
@@ -440,7 +441,7 @@ mod test {
         }))
     }
 
-    async fn logout(session: Session) -> Result<HttpResponse> {
+    async fn logout(session: Session) -> Result<BaseHttpResponse<Body>> {
         let id: Option<String> = session.get("user_id")?;
         if let Some(x) = id {
             session.purge();
@@ -648,7 +649,10 @@ mod test {
             .unwrap();
         assert_ne!(
             OffsetDateTime::now_utc().year(),
-            cookie_4.expires().map(|t| t.year()).unwrap()
+            cookie_4.expires()
+                .and_then(|t| t.datetime())
+                .map(|t| t.year())
+                .unwrap()
         );
 
         // Step 10: GET index, including session cookie #2 in request

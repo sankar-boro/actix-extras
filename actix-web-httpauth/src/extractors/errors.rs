@@ -1,6 +1,8 @@
 use std::error::Error;
 use std::fmt;
 
+use actix_web::BaseHttpResponse;
+use actix_web::body::Body;
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
 
@@ -51,11 +53,11 @@ impl<C: Challenge> fmt::Display for AuthenticationError<C> {
 impl<C: 'static + Challenge> Error for AuthenticationError<C> {}
 
 impl<C: 'static + Challenge> ResponseError for AuthenticationError<C> {
-    fn error_response(&self) -> HttpResponse {
+    fn error_response(&self) -> BaseHttpResponse<Body> {
         HttpResponse::build(self.status_code)
             // TODO: Get rid of the `.clone()`
             .insert_header(WwwAuthenticate(self.challenge.clone()))
-            .finish()
+            .finish().into()
     }
 
     fn status_code(&self) -> StatusCode {

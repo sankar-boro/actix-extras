@@ -63,7 +63,7 @@ async fn login(
 /// some protected resource
 async fn secret(session: Session) -> Result<impl Responder, Error> {
     // only allow access to this resource if the user has an active session
-    validate_session(&session)?;
+    validate_session(&session).unwrap();
 
     Ok("secret revealed")
 }

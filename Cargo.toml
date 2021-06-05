@@ -7,8 +7,10 @@ members = [
   "actix-redis",
   "actix-session",
   "actix-web-httpauth",
+  "actix-cookie",
 ]
 
 [patch.crates-io]
 actix-cors = { path = "actix-cors" }
 actix-session = { path = "actix-session" }
+actix-cookie = { path = "actix-cookie" }
