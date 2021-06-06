@@ -85,7 +85,7 @@ async fn main() -> std::io::Result<()> {
                     // allow the cookie only from the current domain
                     .cookie_same_site(cookie::SameSite::Strict),
             )
-            .route("/login", web::post().to(login))
+            // .route("/login", web::post().to(login))
             .route("/secret", web::get().to(secret))
     })
     .bind("0.0.0.0:8080")?

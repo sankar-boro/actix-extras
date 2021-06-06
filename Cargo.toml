@@ -14,3 +14,4 @@ members = [
 actix-cors = { path = "actix-cors" }
 actix-session = { path = "actix-session" }
 actix-cookie = { path = "actix-cookie" }
+actix-redis = { path = "actix-redis"}
